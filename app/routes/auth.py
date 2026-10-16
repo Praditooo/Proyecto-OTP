@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.middleware import get_current_session
+from fastapi import Request
+from app.limiter import limiter
 
 from app.database import get_db
 from app.models import LoginSession, User
@@ -22,7 +24,8 @@ router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def register(data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, data: UserCreate, db: Session = Depends(get_db)):
     """Registra un nuevo usuario.
 
     Valida el email, comprueba que no exista y guarda la contraseña como hash bcrypt.
@@ -54,7 +57,8 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=MessageResponse)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(request: Request, data: LoginRequest, db: Session = Depends(get_db)):
     """Primer paso del login: valida correo y contraseña y envía un OTP por correo."""
     user = db.query(User).filter(User.email == data.email.lower()).first()
 
@@ -74,7 +78,8 @@ def login(data: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/resend-otp", response_model=MessageResponse)
-def resend_otp(data: EmailRequest, db: Session = Depends(get_db)):
+@limiter.limit("3/minute")
+def resend_otp(request: Request, data: EmailRequest, db: Session = Depends(get_db)):
     """Reenvía un nuevo OTP. Responde igual exista o no el correo, para no revelar usuarios."""
     user = db.query(User).filter(User.email == data.email.lower()).first()
     if user:
@@ -84,7 +89,8 @@ def resend_otp(data: EmailRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/verify-otp", response_model=TokenResponse)
-def verify_otp_code(data: OTPVerifyRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def verify_otp_code(request: Request, data: OTPVerifyRequest, db: Session = Depends(get_db)):
     """Segundo paso del login: verifica el OTP y entrega un token JWT con expiración.
 
     El token también se guarda en login_sessions para poder revocarlo al cerrar sesión.

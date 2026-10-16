@@ -1,3 +1,4 @@
+import hmac
 from datetime import timedelta
 
 import pyotp
@@ -24,3 +25,25 @@ def create_otp(db: Session, user_id: int) -> str:
     db.add(otp)
     db.commit()
     return code
+
+
+def verify_otp(db: Session, user_id: int, code: str) -> bool:
+    """Comprueba que el código sea el último generado, no haya expirado ni se haya usado.
+
+    Si es válido lo marca como usado, así no se puede reutilizar.
+    """
+    otp = (
+        db.query(OTPCode)
+        .filter(OTPCode.user_id == user_id, OTPCode.used.is_(False))
+        .order_by(OTPCode.id.desc())
+        .first()
+    )
+    if otp is None or otp.expires_at < utcnow():
+        return False
+
+    if not hmac.compare_digest(otp.code, code):
+        return False
+
+    otp.used = True
+    db.commit()
+    return True

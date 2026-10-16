@@ -3,17 +3,19 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User
+from app.models import LoginSession, User
 from app.schemas import (
     EmailRequest,
     LoginRequest,
     MessageResponse,
+    OTPVerifyRequest,
+    TokenResponse,
     UserCreate,
     UserResponse,
 )
-from app.security import hash_password, verify_password
+from app.security import create_access_token, hash_password, verify_password
 from app.services.email_service import send_otp_email
-from app.services.otp_service import create_otp
+from app.services.otp_service import create_otp, verify_otp
 
 router = APIRouter(prefix="/auth", tags=["Autenticación"])
 
@@ -78,3 +80,23 @@ def resend_otp(data: EmailRequest, db: Session = Depends(get_db)):
         code = create_otp(db, user.id)
         send_otp_email(user.email, code)
     return {"message": "Si el correo está registrado, te enviamos un nuevo código"}
+
+
+@router.post("/verify-otp", response_model=TokenResponse)
+def verify_otp_code(data: OTPVerifyRequest, db: Session = Depends(get_db)):
+    """Segundo paso del login: verifica el OTP y entrega un token JWT con expiración.
+
+    El token también se guarda en login_sessions para poder revocarlo al cerrar sesión.
+    """
+    user = db.query(User).filter(User.email == data.email.lower()).first()
+
+    if not user or not verify_otp(db, user.id, data.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Código inválido o expirado",
+        )
+
+    token, expires_at = create_access_token(user.id)
+    db.add(LoginSession(user_id=user.id, token=token, expires_at=expires_at))
+    db.commit()
+    return {"access_token": token, "token_type": "bearer"}

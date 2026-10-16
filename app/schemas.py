@@ -78,3 +78,20 @@ class MessageResponse(BaseModel):
     """Respuesta simple con un mensaje de texto."""
 
     message: str
+
+class OTPVerifyRequest(BaseModel):
+    """Datos para el segundo paso del login: correo y código OTP de 6 dígitos."""
+
+    email: EmailStr
+    code: str = Field(pattern=r"^\d{6}$")
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"email": "ana.perez@gmail.com", "code": "123456"}}
+    )
+
+
+class TokenResponse(BaseModel):
+    """Token JWT que se entrega tras verificar el OTP."""
+
+    access_token: str
+    token_type: str = "bearer"

@@ -4,8 +4,8 @@ API de autenticación de dos factores: el usuario inicia sesión con correo y co
 recibe un código OTP de 6 dígitos por correo electrónico (válido 15 minutos) y, al
 verificarlo, obtiene un token JWT para acceder a las rutas protegidas.
 
-**URL del despliegue:** _()_
-**Documentación interactiva:** `<URL>/docs`
+URL del despliegue: _(https://proyecto-otp.onrender.com/)_
+Documentación interactiva: `<URL>/docs`
 
 ## Tecnologías
 
@@ -116,6 +116,15 @@ Desplegado en Render con las variables de entorno configuradas en el panel del s
 Nota: Render bloquea los puertos SMTP habituales (25, 465, 587), por lo que en producción
 se usa Resend a través del puerto 2465, configurado con las variables `SMTP_*`.
 En local se usa Gmail sin cambiar el código.
+
+## Evidencia del despliegue
+
+- URL desplegada: https://proyecto-otp.onrender.com/docs
+- Logs de despliegue exitoso: ![Logs de Render](docs/evidencias/logs-render.png)
+- Variables de entorno configuradas: ![Variables](docs/evidencias/variables-entorno.png)
+- Historial de commits: ![Commits](docs/evidencias/commits-github.png)
+- API funcionando en producción: ![API](docs/evidencias/api-funcionando.png)
+- Pruebas con pytest: ![Pruebas](docs/evidencias/pytest.png)
 
 ## Autores
 

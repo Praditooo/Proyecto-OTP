@@ -50,3 +50,31 @@ class UserResponse(BaseModel):
             }
         },
     )
+
+class LoginRequest(BaseModel):
+    """Datos para iniciar sesión (primer paso: correo y contraseña)."""
+
+    email: EmailStr
+    password: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"email": "ana.perez@gmail.com", "password": "Clave1234"}
+        }
+    )
+
+
+class EmailRequest(BaseModel):
+    """Solicitud que solo necesita el correo (por ejemplo, reenviar el OTP)."""
+
+    email: EmailStr
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"email": "ana.perez@gmail.com"}}
+    )
+
+
+class MessageResponse(BaseModel):
+    """Respuesta simple con un mensaje de texto."""
+
+    message: str

@@ -95,3 +95,10 @@ class TokenResponse(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
+
+class UserUpdate(BaseModel):
+    """Datos que se pueden modificar del perfil."""
+
+    full_name: str = Field(min_length=2, max_length=100)
+
+    model_config = ConfigDict(json_schema_extra={"example": {"full_name": "Ana María Pérez"}})

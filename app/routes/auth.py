@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from app.middleware import get_current_session
 
 from app.database import get_db
 from app.models import LoginSession, User
@@ -100,3 +101,28 @@ def verify_otp_code(data: OTPVerifyRequest, db: Session = Depends(get_db)):
     db.add(LoginSession(user_id=user.id, token=token, expires_at=expires_at))
     db.commit()
     return {"access_token": token, "token_type": "bearer"}
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(
+    session: LoginSession = Depends(get_current_session),
+    db: Session = Depends(get_db),
+):
+    """Cambia el token actual por uno nuevo. El anterior queda revocado."""
+    user_id = session.user_id
+    new_token, expires_at = create_access_token(user_id)
+
+    db.delete(session)  # el token viejo deja de servir
+    db.add(LoginSession(user_id=user_id, token=new_token, expires_at=expires_at))
+    db.commit()
+    return {"access_token": new_token, "token_type": "bearer"}
+
+
+@router.post("/logout", response_model=MessageResponse)
+def logout(
+    session: LoginSession = Depends(get_current_session),
+    db: Session = Depends(get_db),
+):
+    """Cierra la sesión: borra el token de login_sessions, por lo que queda revocado."""
+    db.delete(session)
+    db.commit()
+    return {"message": "Sesión cerrada correctamente"}
